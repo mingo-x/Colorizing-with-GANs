@@ -1,6 +1,8 @@
 import pickle
 import numpy as np
 from PIL import Image
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
