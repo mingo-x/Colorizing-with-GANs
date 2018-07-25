@@ -3,8 +3,8 @@ import random
 import numpy as np
 import tensorflow as tf
 from .options import ModelOptions
-from .models import Cifar10Model, Places365Model
-from .dataset import CIFAR10_DATASET, PLACES365_DATASET
+from .models import Cifar10Model, Places365Model, ImagenetModel
+from .dataset import CIFAR10_DATASET, PLACES365_DATASET, IMAGENET_DATASET
 
 
 def main(options):
@@ -24,9 +24,10 @@ def main(options):
 
         if options.dataset == CIFAR10_DATASET:
             model = Cifar10Model(sess, options)
-
         elif options.dataset == PLACES365_DATASET:
             model = Places365Model(sess, options)
+        elif options.dataset == IMAGENET_DATASET:
+            model = ImagenetModel(sess, options)
 
         if not os.path.exists(options.checkpoints_path):
             os.makedirs(options.checkpoints_path)

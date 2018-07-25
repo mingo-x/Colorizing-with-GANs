@@ -42,6 +42,20 @@ python train.py \
   
 ```
 
+- To train the model on ImageNet dataset with tuned hyperparameters:
+```
+python train.py \
+  --seed 100 \
+  --dataset imagenet \
+  --dataset-path ./dataset/xxx \
+  --checkpoints-path ./checkpoints \
+  --batch-size 16 \
+  --epochs x \
+  --lr 3e-4 \
+  --label-smoothing 1
+  
+```
+
 - To train the model of cifar10 dataset with tuned hyperparameters:
 ```
 python train.py \

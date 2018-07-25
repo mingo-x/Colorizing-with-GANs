@@ -9,8 +9,8 @@ import tensorflow as tf
 from tensorflow import keras
 from abc import abstractmethod
 from .networks import Generator, Discriminator
-from .dataset import Places365Dataset, Cifar10Dataset
-from .ops import pixelwise_accuracy, preprocess, postprocess
+from .dataset import Places365Dataset, Cifar10Dataset, ImagenetDataset
+from .ops import pixelwise_accuracy, preprocess, postprocess, vgg16_top1_classification_accuracy, pixelwise_accuracy_l2
 from .ops import COLORSPACE_RGB, COLORSPACE_LAB
 from .utils import stitch_images, turing_test, imshow, visualize
 
@@ -55,7 +55,7 @@ class BaseModel:
                 self.sess.run([self.gen_train, self.accuracy], feed_dict=feed_dic)
                 self.sess.run([self.gen_train, self.accuracy], feed_dict=feed_dic)
 
-                lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, step = self.eval_outputs(feed_dic=feed_dic)
+                lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, vgg_acc, step = self.eval_outputs(feed_dic=feed_dic)
 
                 progbar.add(len(input_rgb), values=[
                     ("epoch", epoch + 1),
@@ -67,7 +67,8 @@ class BaseModel:
                     ("G loss", lossG),
                     ("G L1", lossG_l1),
                     ("G gan", lossG_gan),
-                    ("accuracy", acc)
+                    ("accuracy", acc),
+                    ("VGG accuracy", vgg_acc),
                 ])
 
                 # log model at checkpoints
@@ -100,25 +101,28 @@ class BaseModel:
         progbar = keras.utils.Progbar(test_total)
 
         result = []
+        acc_curve = []
+
 
         for input_rgb in test_generator:
             feed_dic = {self.input_rgb: input_rgb}
 
             self.sess.run([self.dis_loss, self.gen_loss, self.accuracy], feed_dict=feed_dic)
 
-            # returns (D loss, D_fake loss, D_real loss, G loss, G_L1 loss, G_gan loss, accuracy, step)
+            # returns (D loss, D_fake loss, D_real loss, G loss, G_L1 loss, G_gan loss, accuracy, VGG accuracy, step)
             result.append(self.eval_outputs(feed_dic=feed_dic))
-
+            acc_curve.append(self.eval_acc_curve(feed_dic=feed_dic))
             progbar.add(len(input_rgb))
 
         result = np.mean(np.array(result), axis=0)
-        print('Results: D loss: %f - D fake: %f - D real: %f - G loss: %f - G L1: %f - G gan: %f - accuracy: %f'
-              % (result[0], result[1], result[2], result[3], result[4], result[5], result[6]))
+        acc_curve = np.mean(np.array(acc_curve), axis=0)
+        print('Results: D loss: %f - D fake: %f - D real: %f - G loss: %f - G L1: %f - G gan: %f - accuracy: %f - VGG accuracy: %f'
+              % (result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7]))
 
         if self.options.log:
             with open(self.test_log_file, 'a') as f:
                 # (epoch, step, lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc)
-                f.write('%d %d %f %f %f %f %f %f %f\n' % (self.epoch, result[7], result[0], result[1], result[2], result[3], result[4], result[5], result[6]))
+                f.write('%d %d %f %f %f %f %f %f %f %f\n' % (self.epoch, result[8], result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7]))
 
         print('\n')
 
@@ -196,6 +200,9 @@ class BaseModel:
 
         self.sampler = gen_factory.create(self.input_gray, kernel, seed, reuse_variables=True)
         self.accuracy = pixelwise_accuracy(self.input_color, gen, self.options.color_space, self.options.acc_thresh)
+        self.l2_acc = lambda p: pixelwise_accuracy_l2(self.input_color, gen, self.options.color_space, p)
+        # TODO: Define input_class (one-hot embedding).
+        self.class_acc = vgg16_top1_classification_accuracy(gen, self.input_class)
         self.learning_rate = tf.constant(self.options.lr)
 
         # learning rate decay
@@ -237,7 +244,7 @@ class BaseModel:
     def eval_outputs(self, feed_dic):
         '''
         evaluates the loss and accuracy
-        returns (D loss, D_fake loss, D_real loss, G loss, G_L1 loss, G_gan loss, accuracy, step)
+        returns (D loss, D_fake loss, D_real loss, G loss, G_L1 loss, G_gan loss, accuracy, VGG accuracy, step)
         '''
         lossD_fake = self.dis_loss_fake.eval(feed_dict=feed_dic)
         lossD_real = self.dis_loss_real.eval(feed_dict=feed_dic)
@@ -248,9 +255,24 @@ class BaseModel:
         lossG = lossG_l1 + lossG_gan
 
         acc = self.accuracy.eval(feed_dict=feed_dic)
+        vgg_acc = self.class_acc.eval(feed_dict=feed_dic)
         step = self.sess.run(self.global_step)
 
-        return lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, step
+        return lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, vgg_acc, step
+
+
+    def eval_acc_curve(self, feed_dic):
+        '''
+        evaluates the loss and accuracy
+        returns (D loss, D_fake loss, D_real loss, G loss, G_L1 loss, G_gan loss, accuracy, VGG accuracy, step)
+        '''
+        accs = []
+        for p in range(1, 101):
+            acc = self.l2_acc(p).eval(feed_dict=feed_dic)
+            accs.append(acc)
+
+        return accs
+
 
     @abstractmethod
     def create_generator(self):
@@ -347,6 +369,54 @@ class Places365Model(BaseModel):
 
     def create_dataset(self, training=True):
         return Places365Dataset(
+            path=self.options.dataset_path,
+            training=training,
+            augment=self.options.augment)
+
+
+class ImagenetModel(BaseModel):
+    def __init__(self, sess, options):
+        super(ImagenetModel, self).__init__(sess, options)
+
+    def create_generator(self):
+        kernels_gen_encoder = [
+            (64, 1, 0),     # [batch, 256, 256, ch] => [batch, 256, 256, 64]
+            (64, 2, 0),     # [batch, 256, 256, 64] => [batch, 128, 128, 64]
+            (128, 2, 0),    # [batch, 128, 128, 64] => [batch, 64, 64, 128]
+            (256, 2, 0),    # [batch, 64, 64, 128] => [batch, 32, 32, 256]
+            (512, 2, 0),    # [batch, 32, 32, 256] => [batch, 16, 16, 512]
+            (512, 2, 0),    # [batch, 16, 16, 512] => [batch, 8, 8, 512]
+            (512, 2, 0),    # [batch, 8, 8, 512] => [batch, 4, 4, 512]
+            (512, 2, 0)     # [batch, 4, 4, 512] => [batch, 2, 2, 512]
+        ]
+
+        kernels_gen_decoder = [
+            (512, 2, 0.5),  # [batch, 2, 2, 512] => [batch, 4, 4, 512]
+            (512, 2, 0.5),  # [batch, 4, 4, 512] => [batch, 8, 8, 512]
+            (512, 2, 0.5),  # [batch, 8, 8, 512] => [batch, 16, 16, 512]
+            (256, 2, 0),    # [batch, 16, 16, 512] => [batch, 32, 32, 256]
+            (128, 2, 0),    # [batch, 32, 32, 256] => [batch, 64, 64, 128]
+            (64, 2, 0),     # [batch, 64, 64, 128] => [batch, 128, 128, 64]
+            (64, 2, 0)      # [batch, 128, 128, 64] => [batch, 256, 256, 64]
+        ]
+
+        return Generator('gen', kernels_gen_encoder, kernels_gen_decoder)
+
+    def create_discriminator(self):
+        kernels_dis = [
+            (64, 2, 0),     # [batch, 256, 256, ch] => [batch, 128, 128, 64]
+            (128, 2, 0),    # [batch, 128, 128, 64] => [batch, 64, 64, 128]
+            (256, 2, 0),    # [batch, 64, 64, 128] => [batch, 32, 32, 256]
+            (512, 2, 0),    # [batch, 32, 32, 256] => [batch, 16, 16, 512]
+            (512, 2, 0),    # [batch, 16, 16, 512] => [batch, 8, 8, 512]
+            (512, 2, 0),    # [batch, 8, 8, 512] => [batch, 4, 4, 512]
+            (512, 1, 0),    # [batch, 4, 4, 512] => [batch, 4, 4, 512]
+        ]
+
+        return Discriminator('dis', kernels_dis)
+
+    def create_dataset(self, training=True):
+        return ImagenetDataset(
             path=self.options.dataset_path,
             training=training,
             augment=self.options.augment)

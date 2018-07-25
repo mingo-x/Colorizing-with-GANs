@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+VGG16 = tf.keras.applications.vgg16.VGG16()
 COLORSPACE_RGB = 'RGB'
 COLORSPACE_LAB = 'LAB'
 tf.nn.softmax_cross_entropy_with_logits_v2
@@ -73,6 +74,25 @@ def pixelwise_accuracy(img_real, img_fake, colorspace, thresh):
     pred = predL * predA * predB
 
     return tf.reduce_mean(pred)
+
+
+def pixelwise_accuracy_l2(img_real, img_fake, colorspace, thresh):
+    """
+    Measures the accuracy of the colorization process by comparing pixels' L2 distance.
+    """
+    img_real = postprocess(img_real, colorspace, COLORSPACE_LAB)
+    img_fake = postprocess(img_fake, colorspace, COLORSPACE_LAB)
+
+    l2_dist = tf.sqrt(tf.reduce_sum(tf.square(tf.round(img_real) - tf.round(img_fake)), axis=-1))
+    pred = tf.cast(tf.less_equal(l2_dist, thresh), tf.float64)
+
+    return tf.reduce_mean(pred)
+
+
+def vgg16_top1_classification_accuracy(img_fake, img_class):
+    classification = VGG16(img_fake)
+    accuracy = tf.keras.metrics.top_k_categorical_accuracy(img_class, classification, k=1)
+    return tf.reduce_mean(accuracy)
 
 
 def preprocess(img, colorspace_in, colorspace_out):

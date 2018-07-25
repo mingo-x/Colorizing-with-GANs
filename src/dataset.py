@@ -7,6 +7,7 @@ from .utils import unpickle
 
 CIFAR10_DATASET = 'cifar10'
 PLACES365_DATASET = 'places365'
+IMAGENET_DATASET = 'imagenet'
 
 
 class BaseDataset():
@@ -115,6 +116,23 @@ class Places365Dataset(BaseDataset):
         super(Places365Dataset, self).__init__(PLACES365_DATASET, path, training, augment)
 
     def load(self):
+        if self.training:
+            data = np.array(
+                glob.glob(self.path + '/data_256/**/*.jpg', recursive=True))
+
+        else:
+            data = np.array(glob.glob(self.path + '/val_256/*.jpg'))
+
+        return data
+
+
+# TODO: Add label.
+class ImagenetDataset(BaseDataset):
+    def __init__(self, path, training=True, augment=True):
+        super(ImagenetDataset, self).__init__(IMAGENET_DATASET, path, training, augment)
+
+    def load(self):
+        # TODO: downscale to 256x256?
         if self.training:
             data = np.array(
                 glob.glob(self.path + '/data_256/**/*.jpg', recursive=True))

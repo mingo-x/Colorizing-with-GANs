@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 import tensorflow as tf
 from .ops import conv2d, conv2d_transpose, pixelwise_accuracy
 
