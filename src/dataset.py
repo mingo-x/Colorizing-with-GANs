@@ -135,7 +135,7 @@ class ImagenetDataset(BaseDataset):
         # TODO: downscale to 256x256?
         if self.training:
             data = np.array(
-                glob.glob(self.path + '/data_256/**/*.jpg', recursive=True))
+                glob.glob(self.path + '//**/*.jpg', recursive=True))
 
         else:
             data = np.array(glob.glob(self.path + '/val_256/*.jpg'))
