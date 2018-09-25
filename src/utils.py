@@ -18,8 +18,7 @@ def stitch_images(grayscale, original, pred):
     original_rgb = []
     for lab in original:
         original_rgb.append(color.lab2rgb(lab))
-    original_rgb = np.array(original_rgb)
-    print(grayscale[0].dtype, original_rgb[0].dtype)
+    original_rgb = np.array(original_rgb, dtype=np.float32)
     pred = np.array(pred)
 
     for ix in range(len(original_rgb)):
