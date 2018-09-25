@@ -4,7 +4,6 @@ from PIL import Image
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-from skimage import color
 
 
 def stitch_images(grayscale, original, pred):
@@ -21,7 +20,7 @@ def stitch_images(grayscale, original, pred):
         xoffset = int(ix % img_per_row) * width * 3 + int(ix % img_per_row) * gap
         yoffset = int(ix / img_per_row) * height
         im1 = Image.fromarray(grayscale[ix])
-        im2 = Image.fromarray(original[ix])
+        im2 = Image.fromarray((original[ix] * 255).astype(np.uint8))
         im3 = Image.fromarray((pred[ix] * 255).astype(np.uint8))
         img.paste(im1, (xoffset, yoffset))
         img.paste(im2, (xoffset + width, yoffset))
