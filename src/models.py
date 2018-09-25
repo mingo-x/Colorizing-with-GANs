@@ -61,7 +61,7 @@ class BaseModel(object):
                 self.sess.run([self.gen_train, self.accuracy], feed_dict=feed_dic)
                 self.sess.run([self.gen_train, self.accuracy], feed_dict=feed_dic)
 
-                lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, vgg_acc, step = self.eval_outputs(feed_dic=feed_dic)
+                lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, step = self.eval_outputs(feed_dic=feed_dic)
 
                 progbar.add(self.options.batch_size, values=[
                     ("epoch", epoch + 1),
@@ -74,7 +74,7 @@ class BaseModel(object):
                     ("G L1", lossG_l1),
                     ("G gan", lossG_gan),
                     ("accuracy", acc),
-                    ("VGG accuracy", vgg_acc),
+                    # ("VGG accuracy", vgg_acc),
                 ])
 
                 # log model at checkpoints
@@ -217,7 +217,7 @@ class BaseModel(object):
         self.accuracy = pixelwise_accuracy(self.input_color, gen, self.options.color_space, self.options.acc_thresh)
         self.l2_acc = lambda p: pixelwise_accuracy_l2(self.input_color, gen, self.options.color_space, p)
         # TODO: Define input_class (one-hot embedding).
-        self.class_acc = vgg16_top1_classification_accuracy(gen, self.input_class)
+        # self.class_acc = vgg16_top1_classification_accuracy(gen, self.input_class)
         self.learning_rate = tf.constant(self.options.lr)
 
         # learning rate decay
@@ -270,10 +270,10 @@ class BaseModel(object):
         lossG = lossG_l1 + lossG_gan
 
         acc = self.accuracy.eval(feed_dict=feed_dic)
-        vgg_acc = self.class_acc.eval(feed_dict=feed_dic)
+        # vgg_acc = self.class_acc.eval(feed_dict=feed_dic)
         step = self.sess.run(self.global_step)
 
-        return lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, vgg_acc, step
+        return lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, step
 
 
     def eval_acc_curve(self, feed_dic):
