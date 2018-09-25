@@ -43,18 +43,8 @@ python train.py \
 ```
 
 - To train the model on ImageNet dataset with tuned hyperparameters:
-```
-python train.py \
-  --seed 100 \
-  --dataset imagenet \
-  --dataset-path ./dataset/xxx \
-  --checkpoints-path ./checkpoints \
-  --batch-size 16 \
-  --epochs x \
-  --lr 3e-4 \
-  --label-smoothing 1
-  
-```
+
+ssh xieya@biwirender17 ". /srv/glusterfs/xieya/anaconda2/etc/profile.d/conda.sh; export PATH="/srv/glusterfs/xieya/cuda-9.0/bin${PATH:+:${PATH}}"; export LD_LIBRARY_PATH="/srv/glusterfs/xieya/cuda-9.0/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"; echo \$PATH; conda activate; cd ~/Colorizing-with-GANs; python -u train.py --checkpoints-path /srv/glusterfs/xieya/cgan --gpu-ids 4 > /srv/glusterfs/xieya/log/train/cgan.log"
 
 - To train the model of cifar10 dataset with tuned hyperparameters:
 ```

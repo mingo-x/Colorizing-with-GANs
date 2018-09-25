@@ -19,7 +19,7 @@ class DataSet(object):
     image_path
   """
 
-  def __init__(self, data_path='/home/xieya/colorization-tf/data/train.txt', nthread=12):
+  def __init__(self, data_path, nthread=12):
     """
     Args:
       common_params: A dict

@@ -25,7 +25,7 @@ class BaseModel:
         self.test_log_file = os.path.join(options.checkpoints_path, 'log_test.dat')
         self.train_log_file = os.path.join(options.checkpoints_path, 'log_train.dat')
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
-        self.dataset_train = DataSet()
+        self.dataset_train = DataSet('/srv/glusterfs/xieya/data/imagenet1k_uncompressed/train.txt')
         self.dataset_test = DataSet('/srv/glusterfs/xieya/data/imagenet1k_uncompressed/val.txt', 4)
         # self.dataset_train = self.create_dataset(True)
         # self.dataset_test = self.create_dataset(False)
