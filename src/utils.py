@@ -15,6 +15,7 @@ def stitch_images(grayscale, original, pred):
 
     grayscale = np.array(grayscale).squeeze()
     original = np.array(original)
+    print(grayscale.shape, original.shape)
     original = color.lab2rgb(original)
     pred = np.array(pred)
 

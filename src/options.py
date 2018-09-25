@@ -41,7 +41,7 @@ class ModelOptions:
         parser.add_argument('--sample-interval', type=int, default=1000, help='how many batches to wait before sampling (default: 1000)')
         parser.add_argument('--validate', type=str2bool, default=True, help='True for validation (default: True)')
         parser.add_argument('--validate-interval', type=int, default=0, help='how many batches to wait before validating (default: 0)')
-        parser.add_argument('--log', type=str2bool, default=False, help='True for logging (default: True)')
+        parser.add_argument('--log', type=str2bool, default=True, help='True for logging (default: True)')
         parser.add_argument('--log-interval', type=int, default=10, help='how many iterations to wait before logging training status (default: 10)')
         parser.add_argument('--visualize', type=str2bool, default=False, help='True for accuracy visualization (default: False)')
         parser.add_argument('--visualize-window', type=int, default=100, help='the exponentially moving average window width (default: 100)')
