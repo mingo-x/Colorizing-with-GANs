@@ -145,7 +145,7 @@ class BaseModel(object):
         fake_image, input_gray = self.sess.run([self.sampler, self.input_gray], feed_dict=feed_dic)
         fake_image = postprocess(tf.convert_to_tensor(fake_image), colorspace_in=self.options.color_space, colorspace_out=COLORSPACE_RGB)
         input_rgb = postprocess(tf.convert_to_tensor(input_lab), colorspace_in=self.options.color_space, colorspace_out=COLORSPACE_RGB)
-        img = stitch_images(input_gray, input_rgb, fake_image.eval())
+        img = stitch_images(input_gray, input_rgb.eval(), fake_image.eval())
 
         if not os.path.exists(self.samples_dir):
             os.makedirs(self.samples_dir)

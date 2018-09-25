@@ -117,7 +117,6 @@ def preprocess(img, colorspace_in, colorspace_out):
 
 
 def postprocess(img, colorspace_in, colorspace_out):
-    print(img.dtype)
     if colorspace_in.upper() == COLORSPACE_RGB:
         # [-1, 1] => [0, 1]
         img = (img + 1) / 2
