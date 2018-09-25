@@ -29,7 +29,7 @@ class BaseModel(object):
         self.dataset_test = DataSet('/srv/glusterfs/xieya/data/imagenet1k_uncompressed/val.txt', 4)
         # self.dataset_train = self.create_dataset(True)
         # self.dataset_test = self.create_dataset(False)
-        self.sample_generator = self.dataset_test.generator(options.sample_size, True)
+        # self.sample_generator = self.dataset_test.generator(options.sample_size, True)
         self.iteration = 0
         self.epoch = 0
         self.is_built = False
