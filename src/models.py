@@ -13,6 +13,7 @@ from .dataset import Places365Dataset, Cifar10Dataset, ImagenetDataset
 from .ops import pixelwise_accuracy, preprocess, postprocess, vgg16_top1_classification_accuracy, pixelwise_accuracy_l2
 from .ops import COLORSPACE_RGB, COLORSPACE_LAB
 from .utils import stitch_images, turing_test, imshow, visualize
+from .imagenet_data import DataSet
 
 
 class BaseModel:
@@ -24,8 +25,10 @@ class BaseModel:
         self.test_log_file = os.path.join(options.checkpoints_path, 'log_test.dat')
         self.train_log_file = os.path.join(options.checkpoints_path, 'log_train.dat')
         self.global_step = tf.Variable(0, name='global_step', trainable=False)
-        self.dataset_train = self.create_dataset(True)
-        self.dataset_test = self.create_dataset(False)
+        self.dataset_train = DataSet()
+        self.dataset_test = DataSet('/srv/glusterfs/xieya/data/imagenet1k_uncompressed/val.txt', 4)
+        # self.dataset_train = self.create_dataset(True)
+        # self.dataset_test = self.create_dataset(False)
         self.sample_generator = self.dataset_test.generator(options.sample_size, True)
         self.iteration = 0
         self.epoch = 0
@@ -34,21 +37,24 @@ class BaseModel:
     def train(self):
         self.build()
 
-        total = len(self.dataset_train)
+        # total = len(self.dataset_train)
+        total = 1200000
 
         for epoch in range(self.options.epochs):
             lr_rate = self.sess.run(self.learning_rate)
+            num_iters = total / self.options.batch_size
 
             print('Training epoch: %d' % (epoch + 1) + " - learning rate: " + str(lr_rate))
 
             self.epoch = epoch + 1
             self.iteration = 0
 
-            generator = self.dataset_train.generator(self.options.batch_size)
+            # generator = self.dataset_train.generator(self.options.batch_size)
             progbar = keras.utils.Progbar(total, stateful_metrics=['epoch', 'iteration', 'step'])
 
-            for input_rgb in generator:
-                feed_dic = {self.input_rgb: input_rgb}
+            for _ in range(num_iters):
+                input_lab = self.dataset_train.batch()
+                feed_dic = {self.input_lab: input_lab}
 
                 self.iteration = self.iteration + 1
                 self.sess.run([self.dis_train], feed_dict=feed_dic)
@@ -57,7 +63,7 @@ class BaseModel:
 
                 lossD, lossD_fake, lossD_real, lossG, lossG_l1, lossG_gan, acc, vgg_acc, step = self.eval_outputs(feed_dic=feed_dic)
 
-                progbar.add(len(input_rgb), values=[
+                progbar.add(self.options.batch_size, values=[
                     ("epoch", epoch + 1),
                     ("iteration", self.iteration),
                     ("step", step),
@@ -96,23 +102,25 @@ class BaseModel:
 
     def evaluate(self):
         print('\n\nEvaluating epoch: %d' % self.epoch)
-        test_total = len(self.dataset_test)
-        test_generator = self.dataset_test.generator(self.options.batch_size)
+        # test_total = len(self.dataset_test)
+        test_total = 10000
+        test_iters = test_total / self.options.batch_size
+        # test_generator = self.dataset_test.generator(self.options.batch_size)
         progbar = keras.utils.Progbar(test_total)
 
         result = []
         acc_curve = []
 
-
-        for input_rgb in test_generator:
-            feed_dic = {self.input_rgb: input_rgb}
+        for _ in range(test_iters):
+            input_lab = self.dataset_test.batch()
+            feed_dic = {self.input_lab: input_lab}
 
             self.sess.run([self.dis_loss, self.gen_loss, self.accuracy], feed_dict=feed_dic)
 
             # returns (D loss, D_fake loss, D_real loss, G loss, G_L1 loss, G_gan loss, accuracy, VGG accuracy, step)
             result.append(self.eval_outputs(feed_dic=feed_dic))
             acc_curve.append(self.eval_acc_curve(feed_dic=feed_dic))
-            progbar.add(len(input_rgb))
+            progbar.add(self.options.batch_size)
 
         result = np.mean(np.array(result), axis=0)
         acc_curve = np.mean(np.array(acc_curve), axis=0)
@@ -129,13 +137,14 @@ class BaseModel:
     def sample(self, show=True):
         self.build()
 
-        input_rgb = next(self.sample_generator)
-        feed_dic = {self.input_rgb: input_rgb}
+        # input_rgb = next(self.sample_generator)
+        input_lab = self.dataset_test.batch()
+        feed_dic = {self.input_lab: input_lab}
 
         step, rate = self.sess.run([self.global_step, self.learning_rate])
         fake_image, input_gray = self.sess.run([self.sampler, self.input_gray], feed_dict=feed_dic)
         fake_image = postprocess(tf.convert_to_tensor(fake_image), colorspace_in=self.options.color_space, colorspace_out=COLORSPACE_RGB)
-        img = stitch_images(input_gray, input_rgb, fake_image.eval())
+        img = stitch_images(input_gray, input_lab, fake_image.eval())
 
         if not os.path.exists(self.samples_dir):
             os.makedirs(self.samples_dir)
@@ -178,11 +187,17 @@ class BaseModel:
         seed = seed = self.options.seed
         kernel = self.options.kernel_size
 
-        self.input_rgb = tf.placeholder(tf.float32, shape=(None, None, None, 3), name='input_rgb')
-        self.input_gray = tf.image.rgb_to_grayscale(self.input_rgb)
-        self.input_color = preprocess(self.input_rgb, colorspace_in=COLORSPACE_RGB, colorspace_out=self.options.color_space)
+        # self.input_rgb = tf.placeholder(tf.float32, shape=(None, None, None, 3), name='input_rgb')
+        self.input_lab = tf.placeholder(tf.float32, shape=(None, None, None, 3), name='input_lab')
+        # self.input_gray = tf.image.rgb_to_grayscale(self.input_rgb)
+        self.input_gray = self.input_lab[:, :, :, 0: 1]
+        norm_l = self.input_lab[:, :, :, 0: 1] / 50. - 1.
+        norm_ab = self.input_lab[:, :, :, 1:] / 110.
+        # self.input_color = preprocess(self.input_rgb, colorspace_in=COLORSPACE_RGB, colorspace_out=self.options.color_space)
+        self.input_color = tf.concat([norm_l, norm_ab], 3)
 
         gen = gen_factory.create(self.input_gray, kernel, seed)
+        # dis_real = dis_factory.create(tf.concat([self.input_gray, self.input_color], 3), kernel, seed)
         dis_real = dis_factory.create(tf.concat([self.input_gray, self.input_color], 3), kernel, seed)
         dis_fake = dis_factory.create(tf.concat([self.input_gray, gen], 3), kernel, seed, reuse_variables=True)
 
