@@ -121,6 +121,7 @@ class DataSet(object):
       imgs_lab[:, :, :, 0: 1] /= 50.
       imgs_lab[:, :, :, 0: 1] -= 1.
       imgs_lab[:, :, :, 1:] /= 110.
+      imgs_lab = imgs_lab.astype(np.float32)
 
       self.batch_queue.put(imgs_lab)
 
