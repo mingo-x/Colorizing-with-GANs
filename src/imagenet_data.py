@@ -8,7 +8,7 @@ import numpy as np
 from Queue import Queue
 from threading import Thread as Process
 
-from skimage.transform import color
+from skimage import color
 
 # from utils import *
 

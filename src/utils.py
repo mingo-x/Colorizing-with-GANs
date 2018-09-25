@@ -4,7 +4,7 @@ from PIL import Image
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
-from skimage.transform import color
+from skimage import color
 
 
 def stitch_images(grayscale, original, pred):
