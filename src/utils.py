@@ -15,15 +15,16 @@ def stitch_images(grayscale, original, pred):
 
     grayscale = np.array(grayscale).squeeze()
     original = np.array(original)
-    print(grayscale.shape, original.shape)
-    original = color.lab2rgb(original)
+    original_rgb = []
+    for lab in original:
+        original_rgb.append(color.lab2rgb(lab))
     pred = np.array(pred)
 
-    for ix in range(len(original)):
+    for ix in range(len(original_rgb)):
         xoffset = int(ix % img_per_row) * width * 3 + int(ix % img_per_row) * gap
         yoffset = int(ix / img_per_row) * height
         im1 = Image.fromarray(grayscale[ix])
-        im2 = Image.fromarray(original[ix])
+        im2 = Image.fromarray(original_rgb[ix])
         im3 = Image.fromarray((pred[ix] * 255).astype(np.uint8))
         img.paste(im1, (xoffset, yoffset))
         img.paste(im2, (xoffset + width, yoffset))
