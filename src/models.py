@@ -16,7 +16,7 @@ from .utils import stitch_images, turing_test, imshow, visualize
 from .imagenet_data import DataSet
 
 
-class BaseModel:
+class BaseModel(object):
     def __init__(self, sess, options):
         self.sess = sess
         self.options = options
@@ -429,9 +429,3 @@ class ImagenetModel(BaseModel):
         ]
 
         return Discriminator('dis', kernels_dis)
-
-    def create_dataset(self, training=True):
-        return ImagenetDataset(
-            path=self.options.dataset_path,
-            training=training,
-            augment=self.options.augment)
