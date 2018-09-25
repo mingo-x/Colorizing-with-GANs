@@ -118,9 +118,9 @@ class DataSet(object):
 
       # RGB to LAB
       imgs_lab = color.rgb2lab(images)
-      # imgs_lab[:, :, :, 0: 1] /= 50.
-      # imgs_lab[:, :, :, 0: 1] -= 1.
-      # imgs_lab[:, :, :, 1:] /= 110.
+      imgs_lab[:, :, :, 0: 1] /= 50.
+      imgs_lab[:, :, :, 0: 1] -= 1.
+      imgs_lab[:, :, :, 1:] /= 110.
 
       self.batch_queue.put(imgs_lab)
 

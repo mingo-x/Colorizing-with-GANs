@@ -144,7 +144,8 @@ class BaseModel(object):
         step, rate = self.sess.run([self.global_step, self.learning_rate])
         fake_image, input_gray = self.sess.run([self.sampler, self.input_gray], feed_dict=feed_dic)
         fake_image = postprocess(tf.convert_to_tensor(fake_image), colorspace_in=self.options.color_space, colorspace_out=COLORSPACE_RGB)
-        img = stitch_images(input_gray, input_lab, fake_image.eval())
+        input_rgb = postprocess(tf.convert_to_tensor(input_lab), colorspace_in=self.options.color_space, colorspace_out=COLORSPACE_RGB)
+        img = stitch_images(input_gray, input_rgb, fake_image.eval())
 
         if not os.path.exists(self.samples_dir):
             os.makedirs(self.samples_dir)
@@ -191,10 +192,10 @@ class BaseModel(object):
         self.input_lab = tf.placeholder(tf.float32, shape=(None, None, None, 3), name='input_lab')
         # self.input_gray = tf.image.rgb_to_grayscale(self.input_rgb)
         self.input_gray = self.input_lab[:, :, :, 0: 1]
-        norm_l = self.input_lab[:, :, :, 0: 1] / 50. - 1.
-        norm_ab = self.input_lab[:, :, :, 1:] / 110.
+        # norm_l = self.input_lab[:, :, :, 0: 1] / 50. - 1.
+        # norm_ab = self.input_lab[:, :, :, 1:] / 110.
         # self.input_color = preprocess(self.input_rgb, colorspace_in=COLORSPACE_RGB, colorspace_out=self.options.color_space)
-        self.input_color = tf.concat([norm_l, norm_ab], 3)
+        self.input_color = self.input_lab
 
         gen = gen_factory.create(self.input_gray, kernel, seed)
         # dis_real = dis_factory.create(tf.concat([self.input_gray, self.input_color], 3), kernel, seed)
