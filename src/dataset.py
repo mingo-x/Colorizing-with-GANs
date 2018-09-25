@@ -124,20 +124,3 @@ class Places365Dataset(BaseDataset):
             data = np.array(glob.glob(self.path + '/val_256/*.jpg'))
 
         return data
-
-
-# TODO: Add label.
-class ImagenetDataset(BaseDataset):
-    def __init__(self, path, training=True, augment=True):
-        super(ImagenetDataset, self).__init__(IMAGENET_DATASET, path, training, augment)
-
-    def load(self):
-        # TODO: downscale to 256x256?
-        if self.training:
-            data = np.array(
-                glob.glob(self.path + '/train/**/*.jpg', recursive=True))
-
-        else:
-            data = np.array(glob.glob(self.path + '/val_256/*.jpg'))
-
-        return data
