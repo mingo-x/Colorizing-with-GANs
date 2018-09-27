@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import random
 import cv2
 import numpy as np
@@ -33,14 +34,14 @@ class DataSet(object):
     self.record_queue = Queue(maxsize=30000)
     self.image_queue = Queue(maxsize=15000)
     self.batch_queue = Queue(maxsize=300)
-    self.record_list = []  
+    self.record_list = []
+    self.data_dir = '/srv/glusterfs/xieya/data/places365_standard'
 
     # filling the record_list
     input_file = open(self.data_path, 'r')
 
     for line in input_file:
-      line = line.strip()
-      self.record_list.append(line)
+      self.record_list.append(os.path.join(self.data_dir, line[: -1]))  # Strip newline.
 
     self.record_point = 0
     self.record_number = len(self.record_list)
