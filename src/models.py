@@ -38,11 +38,11 @@ class BaseModel(object):
         self.build()
 
         # total = len(self.dataset_train)
-        total = 1200000
+        total = self.dataset_train.data_size
+        num_iters = total / self.options.batch_size
 
         for epoch in range(self.options.epochs):
             lr_rate = self.sess.run(self.learning_rate)
-            num_iters = total / self.options.batch_size
 
             print('Training epoch: %d' % (epoch + 1) + " - learning rate: " + str(lr_rate))
 
@@ -103,7 +103,7 @@ class BaseModel(object):
     def evaluate(self):
         print('\n\nEvaluating epoch: %d' % self.epoch)
         # test_total = len(self.dataset_test)
-        test_total = 10000
+        test_total = self.dataset_test.data_size
         test_iters = test_total / self.options.batch_size
         # test_generator = self.dataset_test.generator(self.options.batch_size)
         progbar = keras.utils.Progbar(test_total)

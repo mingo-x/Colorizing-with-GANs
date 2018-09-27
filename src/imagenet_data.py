@@ -45,6 +45,7 @@ class DataSet(object):
 
     self.record_point = 0
     self.record_number = len(self.record_list)
+    self.data_size = self.record_number
 
     self.num_batch_per_epoch = int(self.record_number / self.batch_size)
 
